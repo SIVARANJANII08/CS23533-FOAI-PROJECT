@@ -1,0 +1,76 @@
+{
+  "mitigations": {
+    "M1017": {
+      "name": "User Training",
+      "description": "Train users to recognise social engineering and to avoid storing credentials in plaintext files."
+    },
+    "M1018": {
+      "name": "User Account Management",
+      "description": "Limit which accounts can create services, scheduled tasks, or modify security settings."
+    },
+    "M1022": {
+      "name": "Restrict File and Directory Permissions",
+      "description": "Apply least-privilege permissions so users cannot modify protected files or security tool directories."
+    },
+    "M1024": {
+      "name": "Restrict Registry Permissions",
+      "description": "Restrict write access to registry keys controlling services, startup, and security software policy."
+    },
+    "M1025": {
+      "name": "Privileged Process Integrity",
+      "description": "Enable protected process light (PPL) for LSASS so its memory cannot be read by user-mode tools."
+    },
+    "M1026": {
+      "name": "Privileged Account Management",
+      "description": "Enforce least privilege and limit the number of accounts holding local administrator rights."
+    },
+    "M1027": {
+      "name": "Password Policies",
+      "description": "Enforce strong password length and complexity, and prohibit credential reuse across systems."
+    },
+    "M1028": {
+      "name": "Operating System Configuration",
+      "description": "Harden OS settings to restrict account creation and unauthorised autostart entries."
+    },
+    "M1029": {
+      "name": "Remote Data Storage",
+      "description": "Forward logs to a remote server or SIEM so local deletion does not destroy the evidence."
+    },
+    "M1030": {
+      "name": "Network Segmentation",
+      "description": "Segment the network to limit how much of the environment a single host can enumerate."
+    },
+    "M1032": {
+      "name": "Multi-factor Authentication",
+      "description": "Require a second authentication factor so a guessed or stolen password is not sufficient."
+    },
+    "M1036": {
+      "name": "Account Use Policies",
+      "description": "Set account lockout thresholds and login attempt limits to break brute-force attempts."
+    },
+    "M1038": {
+      "name": "Execution Prevention",
+      "description": "Use application control (e.g. WDAC or AppLocker) to block unapproved interpreters and proxy binaries."
+    },
+    "M1042": {
+      "name": "Disable or Remove Feature or Program",
+      "description": "Remove or constrain PowerShell where it is not required, and enable Constrained Language Mode."
+    },
+    "M1043": {
+      "name": "Credential Access Protection",
+      "description": "Enable Credential Guard to isolate LSASS secrets from the rest of the operating system."
+    },
+    "M1047": {
+      "name": "Audit",
+      "description": "Audit autostart locations, scheduled tasks, and file shares regularly for unexpected entries."
+    },
+    "M1049": {
+      "name": "Antivirus/Antimalware",
+      "description": "Use signature and heuristic scanning to detect obfuscated, packed, or encoded payloads."
+    },
+    "M9001": {
+      "name": "Detection-Only Guidance (team-defined)",
+      "description": "MITRE ATT&CK lists no preventive control for this technique, since the activity is indistinguishable from normal system use. Monitor instead: enable process command-line auditing and alert on unusual enumeration sequences."
+    }
+  }
+}

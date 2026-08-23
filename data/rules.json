@@ -1,0 +1,223 @@
+{
+  "rules": [
+    {
+      "rule_id": "R001",
+      "technique_id": "T1059.001",
+      "technique_name": "Command and Scripting Interpreter: PowerShell",
+      "tactic": "Execution",
+      "severity": "high",
+      "conditions": [
+        "process_created:powershell.exe",
+        "command_line_contains:-EncodedCommand",
+        "parent_process:winword.exe"
+      ],
+      "mitigation_ids": ["M1042", "M1026", "M1038"]
+    },
+    {
+      "rule_id": "R002",
+      "technique_id": "T1059.003",
+      "technique_name": "Command and Scripting Interpreter: Windows Command Shell",
+      "tactic": "Execution",
+      "severity": "medium",
+      "conditions": [
+        "process_created:cmd.exe",
+        "command_line_contains:/c",
+        "parent_process_unusual:true"
+      ],
+      "mitigation_ids": ["M1038"]
+    },
+    {
+      "rule_id": "R003",
+      "technique_id": "T1053.005",
+      "technique_name": "Scheduled Task/Job: Scheduled Task",
+      "tactic": "Execution",
+      "severity": "high",
+      "conditions": [
+        "process_created:schtasks.exe",
+        "command_line_contains:/create",
+        "task_runs_as:SYSTEM"
+      ],
+      "mitigation_ids": ["M1047", "M1026", "M1018"]
+    },
+    {
+      "rule_id": "R004",
+      "technique_id": "T1547.001",
+      "technique_name": "Boot or Logon Autostart Execution: Registry Run Keys / Startup Folder",
+      "tactic": "Persistence",
+      "severity": "high",
+      "conditions": [
+        "registry_key_modified:HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Run",
+        "new_value_points_to:executable",
+        "file_path_contains:AppData"
+      ],
+      "mitigation_ids": ["M1047"]
+    },
+    {
+      "rule_id": "R005",
+      "technique_id": "T1543.003",
+      "technique_name": "Create or Modify System Process: Windows Service",
+      "tactic": "Persistence",
+      "severity": "high",
+      "conditions": [
+        "process_created:sc.exe",
+        "command_line_contains:create",
+        "service_binary_path_contains:temp"
+      ],
+      "mitigation_ids": ["M1018", "M1022", "M1024"]
+    },
+    {
+      "rule_id": "R006",
+      "technique_id": "T1136.001",
+      "technique_name": "Create Account: Local Account",
+      "tactic": "Persistence",
+      "severity": "high",
+      "conditions": [
+        "process_created:net.exe",
+        "command_line_contains:user /add",
+        "account_added_to_group:Administrators"
+      ],
+      "mitigation_ids": ["M1026", "M1032", "M1028"]
+    },
+    {
+      "rule_id": "R007",
+      "technique_id": "T1110.001",
+      "technique_name": "Brute Force: Password Guessing",
+      "tactic": "Credential Access",
+      "severity": "medium",
+      "conditions": [
+        "failed_login_count_exceeds:5",
+        "same_source_ip:true",
+        "time_window_minutes:10"
+      ],
+      "mitigation_ids": ["M1036", "M1027", "M1032"]
+    },
+    {
+      "rule_id": "R008",
+      "technique_id": "T1003.001",
+      "technique_name": "OS Credential Dumping: LSASS Memory",
+      "tactic": "Credential Access",
+      "severity": "high",
+      "conditions": [
+        "process_access_target:lsass.exe",
+        "access_mask:0x1010",
+        "process_created:procdump.exe"
+      ],
+      "mitigation_ids": ["M1043", "M1025", "M1026"]
+    },
+    {
+      "rule_id": "R009",
+      "technique_id": "T1552.001",
+      "technique_name": "Unsecured Credentials: Credentials In Files",
+      "tactic": "Credential Access",
+      "severity": "medium",
+      "conditions": [
+        "command_line_contains:findstr",
+        "search_term_contains:password",
+        "file_read_pattern:config"
+      ],
+      "mitigation_ids": ["M1022", "M1027", "M1017"]
+    },
+    {
+      "rule_id": "R010",
+      "technique_id": "T1070.004",
+      "technique_name": "Indicator Removal: File Deletion",
+      "tactic": "Defense Evasion",
+      "severity": "medium",
+      "conditions": [
+        "deletion_command:del",
+        "deleted_file_type:log",
+        "file_deleted_in:System32"
+      ],
+      "mitigation_ids": ["M1029"]
+    },
+    {
+      "rule_id": "R011",
+      "technique_id": "T1027",
+      "technique_name": "Obfuscated Files or Information",
+      "tactic": "Defense Evasion",
+      "severity": "medium",
+      "conditions": [
+        "command_line_contains:FromBase64String",
+        "command_line_entropy_exceeds:5.0",
+        "script_length_exceeds:1000"
+      ],
+      "mitigation_ids": ["M1049"]
+    },
+    {
+      "rule_id": "R012",
+      "technique_id": "T1562.001",
+      "technique_name": "Impair Defenses: Disable or Modify Tools",
+      "tactic": "Defense Evasion",
+      "severity": "high",
+      "conditions": [
+        "service_stopped:WinDefend",
+        "registry_key_modified:HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender",
+        "command_line_contains:Set-MpPreference"
+      ],
+      "mitigation_ids": ["M1024", "M1022", "M1018"]
+    },
+    {
+      "rule_id": "R013",
+      "technique_id": "T1218.011",
+      "technique_name": "System Binary Proxy Execution: Rundll32",
+      "tactic": "Defense Evasion",
+      "severity": "medium",
+      "conditions": [
+        "process_created:rundll32.exe",
+        "command_line_contains:javascript:",
+        "parent_process_unusual:true"
+      ],
+      "mitigation_ids": ["M1038"]
+    },
+    {
+      "rule_id": "R014",
+      "technique_id": "T1082",
+      "technique_name": "System Information Discovery",
+      "tactic": "Discovery",
+      "severity": "low",
+      "conditions": [
+        "process_created:systeminfo.exe",
+        "command_output_redirected:true"
+      ],
+      "mitigation_ids": ["M9001"]
+    },
+    {
+      "rule_id": "R015",
+      "technique_id": "T1083",
+      "technique_name": "File and Directory Discovery",
+      "tactic": "Discovery",
+      "severity": "low",
+      "conditions": [
+        "command_line_contains:dir /s",
+        "recursive_enumeration:true",
+        "process_created:cmd.exe"
+      ],
+      "mitigation_ids": ["M9001"]
+    },
+    {
+      "rule_id": "R016",
+      "technique_id": "T1057",
+      "technique_name": "Process Discovery",
+      "tactic": "Discovery",
+      "severity": "low",
+      "conditions": [
+        "process_created:tasklist.exe",
+        "command_line_contains:/svc"
+      ],
+      "mitigation_ids": ["M9001"]
+    },
+    {
+      "rule_id": "R017",
+      "technique_id": "T1018",
+      "technique_name": "Remote System Discovery",
+      "tactic": "Discovery",
+      "severity": "low",
+      "conditions": [
+        "process_created:net.exe",
+        "command_line_contains:view /domain",
+        "network_scan_detected:true"
+      ],
+      "mitigation_ids": ["M1030", "M9001"]
+    }
+  ]
+}
