@@ -11,7 +11,11 @@
         "command_line_contains:-EncodedCommand",
         "parent_process:winword.exe"
       ],
-      "mitigation_ids": ["M1042", "M1026", "M1038"]
+      "mitigation_ids": [
+        "M1042",
+        "M1026",
+        "M1038"
+      ]
     },
     {
       "rule_id": "R002",
@@ -24,7 +28,9 @@
         "command_line_contains:/c",
         "parent_process_unusual:true"
       ],
-      "mitigation_ids": ["M1038"]
+      "mitigation_ids": [
+        "M1038"
+      ]
     },
     {
       "rule_id": "R003",
@@ -37,7 +43,11 @@
         "command_line_contains:/create",
         "task_runs_as:SYSTEM"
       ],
-      "mitigation_ids": ["M1047", "M1026", "M1018"]
+      "mitigation_ids": [
+        "M1047",
+        "M1026",
+        "M1018"
+      ]
     },
     {
       "rule_id": "R004",
@@ -50,7 +60,9 @@
         "new_value_points_to:executable",
         "file_path_contains:AppData"
       ],
-      "mitigation_ids": ["M1047"]
+      "mitigation_ids": [
+        "M1047"
+      ]
     },
     {
       "rule_id": "R005",
@@ -63,7 +75,11 @@
         "command_line_contains:create",
         "service_binary_path_contains:temp"
       ],
-      "mitigation_ids": ["M1018", "M1022", "M1024"]
+      "mitigation_ids": [
+        "M1018",
+        "M1022",
+        "M1024"
+      ]
     },
     {
       "rule_id": "R006",
@@ -76,7 +92,11 @@
         "command_line_contains:user /add",
         "account_added_to_group:Administrators"
       ],
-      "mitigation_ids": ["M1026", "M1032", "M1028"]
+      "mitigation_ids": [
+        "M1026",
+        "M1032",
+        "M1028"
+      ]
     },
     {
       "rule_id": "R007",
@@ -89,7 +109,11 @@
         "same_source_ip:true",
         "time_window_minutes:10"
       ],
-      "mitigation_ids": ["M1036", "M1027", "M1032"]
+      "mitigation_ids": [
+        "M1036",
+        "M1027",
+        "M1032"
+      ]
     },
     {
       "rule_id": "R008",
@@ -102,7 +126,11 @@
         "access_mask:0x1010",
         "process_created:procdump.exe"
       ],
-      "mitigation_ids": ["M1043", "M1025", "M1026"]
+      "mitigation_ids": [
+        "M1043",
+        "M1025",
+        "M1026"
+      ]
     },
     {
       "rule_id": "R009",
@@ -115,7 +143,11 @@
         "search_term_contains:password",
         "file_read_pattern:config"
       ],
-      "mitigation_ids": ["M1022", "M1027", "M1017"]
+      "mitigation_ids": [
+        "M1022",
+        "M1027",
+        "M1017"
+      ]
     },
     {
       "rule_id": "R010",
@@ -128,7 +160,9 @@
         "deleted_file_type:log",
         "file_deleted_in:System32"
       ],
-      "mitigation_ids": ["M1029"]
+      "mitigation_ids": [
+        "M1029"
+      ]
     },
     {
       "rule_id": "R011",
@@ -141,7 +175,9 @@
         "command_line_entropy_exceeds:5.0",
         "script_length_exceeds:1000"
       ],
-      "mitigation_ids": ["M1049"]
+      "mitigation_ids": [
+        "M1049"
+      ]
     },
     {
       "rule_id": "R012",
@@ -154,7 +190,11 @@
         "registry_key_modified:HKLM\\SOFTWARE\\Policies\\Microsoft\\Windows Defender",
         "command_line_contains:Set-MpPreference"
       ],
-      "mitigation_ids": ["M1024", "M1022", "M1018"]
+      "mitigation_ids": [
+        "M1024",
+        "M1022",
+        "M1018"
+      ]
     },
     {
       "rule_id": "R013",
@@ -167,7 +207,9 @@
         "command_line_contains:javascript:",
         "parent_process_unusual:true"
       ],
-      "mitigation_ids": ["M1038"]
+      "mitigation_ids": [
+        "M1038"
+      ]
     },
     {
       "rule_id": "R014",
@@ -179,7 +221,9 @@
         "process_created:systeminfo.exe",
         "command_output_redirected:true"
       ],
-      "mitigation_ids": ["M9001"]
+      "mitigation_ids": [
+        "M9001"
+      ]
     },
     {
       "rule_id": "R015",
@@ -192,7 +236,9 @@
         "recursive_enumeration:true",
         "process_created:cmd.exe"
       ],
-      "mitigation_ids": ["M9001"]
+      "mitigation_ids": [
+        "M9001"
+      ]
     },
     {
       "rule_id": "R016",
@@ -204,7 +250,9 @@
         "process_created:tasklist.exe",
         "command_line_contains:/svc"
       ],
-      "mitigation_ids": ["M9001"]
+      "mitigation_ids": [
+        "M9001"
+      ]
     },
     {
       "rule_id": "R017",
@@ -217,7 +265,25 @@
         "command_line_contains:view /domain",
         "network_scan_detected:true"
       ],
-      "mitigation_ids": ["M1030", "M9001"]
+      "mitigation_ids": [
+        "M1030",
+        "M9001"
+      ]
+    },
+    {
+      "rule_id": "R018",
+      "technique_id": "T1566.001",
+      "technique_name": "Phishing: Spearphishing Attachment",
+      "tactic": "Initial Access",
+      "severity": "high",
+      "conditions": [
+        "technique_detected:T1059.001",
+        "parent_process:winword.exe"
+      ],
+      "mitigation_ids": [
+        "M1049",
+        "M1017"
+      ]
     }
   ]
 }

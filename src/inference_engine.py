@@ -2,7 +2,8 @@
 Module 2: Forward Chaining Inference Engine
 MITRE ATT&CK Rule-Based Navigator
 
-Owner: Pranathee H
+Match phase (WorkingMemory, match_rule, build_conflict_set): Pranathee H
+Act phase (fire_rule, run, termination detection):         Sivaranjanii M
 """
 
 try:
@@ -92,6 +93,12 @@ class ForwardChainingEngine:
         self.terminated = False
         self.partial_matches = {}
 
+        # --- Act phase state (Sivaranjanii) ---
+        self.fact_source = {}          # Fact -> "observed" or the rule_id that derived it
+        self.fired_rules = set()       # refractoriness: a rule fires at most once
+        self.cycles = 0                # recognize-act cycles completed
+        self.termination_reason = None
+
     def match_rule(self, rule: Rule):
         """
         Match one rule against the current working memory.
@@ -147,91 +154,153 @@ class ForwardChainingEngine:
                 conflict_set.append(rule)
 
         return conflict_set
-    def fire_rule(self, rule: Rule) -> bool:
+    # ------------------------------------------------------------------
+    # ACT PHASE  (Sivaranjanii M)
+    # ------------------------------------------------------------------
+
+    def assert_observations(self, facts) -> int:
         """
-        Fire a fully matched rule.
-
-        The rule's technique is asserted as a new fact
-        in working memory and the firing is recorded
-        in the inference trace.
+        Load the observed behaviours into working memory before the
+        engine runs. Each one is tagged "observed" so the explanation
+        trace can tell raw evidence apart from derived conclusions.
         """
 
-        if not rule.is_fully_matched(
-            self.working_memory.facts
-        ):
-            return False
+        added = 0
 
-        conclusion = Fact(
-            attribute="technique_detected",
-            value=rule.technique_id
-        )
-
-        added = self.working_memory.add(conclusion)
-
-        if added:
-            self.trace.append({
-    "order": len(self.trace) + 1,
-    "rule_id": rule.rule_id,
-    "technique_id": rule.technique_id,
-    "technique_name": rule.technique_name,
-    "tactic": rule.tactic,
-    "matched_conditions": [
-        str(condition)
-        for condition in rule.conditions
-    ],
-    "matched_count": len(rule.conditions),
-    "total_conditions": len(rule.conditions),
-    "conclusion": str(conclusion),
-    "reason": (
-        f"All {len(rule.conditions)} conditions of "
-        f"{rule.rule_id} were satisfied by the observed facts."
-    )
-})
+        for fact in facts:
+            if self.working_memory.add(fact):
+                self.fact_source[fact] = "observed"
+                added += 1
 
         return added
+
+    def select_rule(self, available_rules):
+        """
+        Conflict resolution: choose ONE rule from the eligible set.
+
+        Current strategy: textual order (the order rules appear in
+        rules.json). Module 3 replaces this method with best-first
+        selection using the heuristic, without touching fire_rule/run.
+        """
+
+        return available_rules[0]
+
+    def fire_rule(self, rule: Rule) -> list:
+        """
+        Fire a fully matched rule (the THEN part).
+
+        Asserts two conclusions into working memory:
+            technique_detected:<technique_id>
+            tactic_detected:<tactic>
+        and records the firing in the inference trace.
+
+        Returns the list of facts that were NEW to working memory.
+        A rule whose conclusions were already known still counts as
+        fired (it is recorded and never re-fires), so the engine keeps
+        going instead of stopping early.
+        """
+
+        if not rule.is_fully_matched(self.working_memory.facts):
+            return []
+
+        conclusions = [
+            Fact("technique_detected", rule.technique_id),
+            Fact("tactic_detected", rule.tactic),
+        ]
+
+        new_facts = []
+
+        for fact in conclusions:
+            if self.working_memory.add(fact):
+                self.fact_source[fact] = rule.rule_id
+                new_facts.append(fact)
+
+        self.fired_rules.add(rule.rule_id)
+
+        self.trace.append({
+            "order": len(self.trace) + 1,
+            "cycle": self.cycles + 1,
+            "rule_id": rule.rule_id,
+            "technique_id": rule.technique_id,
+            "technique_name": rule.technique_name,
+            "tactic": rule.tactic,
+            "severity": rule.severity,
+            "matched_conditions": [
+                {
+                    "fact": str(condition),
+                    "source": self.fact_source.get(condition, "observed"),
+                }
+                for condition in rule.conditions
+            ],
+            "matched_count": len(rule.conditions),
+            "total_conditions": len(rule.conditions),
+            "conclusions": [str(fact) for fact in conclusions],
+            "new_facts": [str(fact) for fact in new_facts],
+            "mitigation_ids": list(rule.mitigation_ids),
+            "reason": (
+                f"All {len(rule.conditions)} conditions of "
+                f"{rule.rule_id} were present in working memory."
+            ),
+        })
+
+        return new_facts
+
     def get_trace(self):
-        """
-        Return the inference trace showing
-        which rules fired and what they concluded.
-        """
+        """Return the inference trace (one entry per rule firing)."""
 
         return list(self.trace)
-    def run(self):
-        """
-        Run the forward chaining recognize-act cycle.
 
-        Rules are repeatedly matched and fired until
-        no new conclusions can be added to working memory.
+    def run(self, max_cycles: int = 100):
+        """
+        Forward chaining recognize-act cycle.
+
+            1. MATCH    - build the conflict set (fully matched rules)
+            2. FILTER   - drop rules that already fired (refractoriness)
+            3. SELECT   - conflict resolution picks one rule
+            4. ACT      - fire it, asserting conclusions into memory
+            5. repeat
+
+        Termination detection:
+            "quiescence"  - no unfired rule is fully matched, so no
+                            new fact can ever be derived (normal stop)
+            "cycle_limit" - safety guard reached max_cycles
+
+        Returns the final working memory.
         """
 
-        fired_rules = set()
         self.terminated = False
+        self.termination_reason = None
 
         while True:
+            if self.cycles >= max_cycles:
+                self.termination_reason = "cycle_limit"
+                break
+
             conflict_set = self.build_conflict_set()
 
-            # Remove rules that have already been fired
             available_rules = [
                 rule
                 for rule in conflict_set
-                if rule.rule_id not in fired_rules
+                if rule.rule_id not in self.fired_rules
             ]
 
-            # No more rules can fire
             if not available_rules:
-                self.terminated = True
+                self.termination_reason = "quiescence"
                 break
 
-            # Select the first eligible rule
-            selected_rule = available_rules[0]
+            selected_rule = self.select_rule(available_rules)
+            self.fire_rule(selected_rule)
+            self.cycles += 1
 
-            # Fire the selected rule
-            fired = self.fire_rule(selected_rule)
-
-            if not fired:
-                self.terminated = True
-                break
-
-            fired_rules.add(selected_rule.rule_id)
-
+        self.terminated = True
         return self.working_memory.get_all()
+
+    def detected_techniques(self):
+        """Rules that fired, in firing order (handy for main.py / Module 4)."""
+
+        return [
+            rule
+            for entry in self.trace
+            for rule in self.knowledge_base.rules
+            if rule.rule_id == entry["rule_id"]
+        ]
