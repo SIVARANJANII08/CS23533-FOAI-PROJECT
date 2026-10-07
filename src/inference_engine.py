@@ -173,17 +173,78 @@ class ForwardChainingEngine:
                 added += 1
 
         return added
+        # ------------------------------------------------------------------
+    # MODULE 3 - HEURISTIC / BEST-FIRST SELECTION (Pranathee H)
+    # ------------------------------------------------------------------
+
+    def heuristic(self, rule):
+        """
+        Calculate the heuristic score of a rule.
+
+        Heuristic:
+            h(rule) = matched conditions / total conditions
+
+        The score is between 0.0 and 1.0.
+        """
+
+        matched = rule.matched_conditions(
+            self.working_memory.facts
+        )
+
+        total = len(rule.conditions)
+
+        if total == 0:
+            return 0.0
+
+        return len(matched) / total
 
     def select_rule(self, available_rules):
         """
-        Conflict resolution: choose ONE rule from the eligible set.
+        Module 3: Best-first rule selection.
 
-        Current strategy: textual order (the order rules appear in
-        rules.json). Module 3 replaces this method with best-first
-        selection using the heuristic, without touching fire_rule/run.
+        Select the rule with the highest heuristic score.
+        If multiple rules have the same heuristic score,
+        severity is used as the tie-breaker.
         """
 
-        return available_rules[0]
+        severity_priority = {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+        }
+
+        return max(
+            available_rules,
+            key=lambda rule: (
+                self.heuristic(rule),
+                severity_priority.get(rule.severity, 0)
+            )
+        )
+    def rank_rules(self, rules=None):
+        """
+        Rank rules by heuristic confidence.
+
+        Higher heuristic scores appear first.
+        Severity is used as a tie-breaker.
+        """
+
+        if rules is None:
+            rules = self.knowledge_base.rules
+
+        severity_priority = {
+            "high": 3,
+            "medium": 2,
+            "low": 1
+        }
+
+        return sorted(
+            rules,
+            key=lambda rule: (
+                self.heuristic(rule),
+                severity_priority.get(rule.severity, 0)
+            ),
+            reverse=True
+        )
 
     def fire_rule(self, rule: Rule) -> list:
         """
