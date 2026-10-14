@@ -1,0 +1,16 @@
+# Persistence: Run-key autostart and a new local administrator account
+# Expected: T1547.001 (R004), T1136.001 (R006). Near misses: T1543.003 (R005, 2/3), T1018 (R017, 1/3).
+
+# Registry Run key now points at an executable in AppData
+registry_key_modified:HKCU\Software\Microsoft\Windows\CurrentVersion\Run
+new_value_points_to:executable
+file_path_contains:AppData
+
+# net user /add, then the account joins Administrators
+process_created:net.exe
+command_line_contains:user /add
+account_added_to_group:Administrators
+
+# sc.exe create seen, but the service binary is not in a temp folder
+process_created:sc.exe
+command_line_contains:create

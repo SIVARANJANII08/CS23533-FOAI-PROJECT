@@ -1,0 +1,11 @@
+# Defense evasion: Microsoft Defender switched off, plus an obfuscated script
+# Expected: T1562.001 (R012). Near misses: T1027 (R011, 2/3), T1070.004 (R010, 1/3).
+
+service_stopped:WinDefend
+registry_key_modified:HKLM\SOFTWARE\Policies\Microsoft\Windows Defender
+command_line_contains:Set-MpPreference
+
+command_line_contains:FromBase64String
+command_line_entropy_exceeds:5.0
+
+deletion_command:del

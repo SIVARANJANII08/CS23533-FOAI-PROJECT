@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Report - {{ data.source }}{% endblock %}
+{% block content %}
+<div class="report-head">
+  <div>
+    <p class="muted small">Detection report</p>
+    <h1>{{ data.source }}</h1>
+    <p class="muted">{{ data.lines_read }} lines read &middot; {{ data.observed|length }} facts &middot; {{ data.generated }}</p>
+  </div>
+  <a class="button ghost" href="{{ url_for('index') }}">New analysis</a>
+</div>
+
+<!-- 1. SUMMARY -->
+<section class="tiles">
+  <div class="tile">
+    <span class="tile-label">Techniques detected</span>
+    <span class="tile-value">{{ data.detected|length }}</span>
+    <span class="tile-sub">high {{ data.severity_counts.high }} &middot; medium {{ data.severity_counts.medium }} &middot; low {{ data.severity_counts.low }}</span>
+  </div>
+  <div class="tile">
+    <span class="tile-label">Highest severity</span>
+    <span class="tile-value"><span class="badge sev-{{ top_severity }}">{{ top_severity|upper }}</span></span>
+  </div>
+  <div class="tile">
+    <span class="tile-label">Near misses</span>
+    <span class="tile-value">{{ data.near_misses|length }}</span>
+    <span class="tile-sub">partly matched rules</span>
+  </div>
+  <div class="tile">
+    <span class="tile-label">Inference</span>
+    <span class="tile-value">{{ data.cycles }} cycle{{ '' if data.cycles == 1 else 's' }}</span>
+    <span class="tile-sub">{{ data.facts_observed }} observed + {{ data.facts_derived }} derived facts, stopped by {{ data.termination_reason }}</span>
+  </div>
+</section>
+
+<section class="card">
+  <h2>Tactics reached</h2>
+  {% if data.tactics %}
+  <div class="killchain">
+    {% for t in data.tactics %}<span class="chip">{{ t }}</span>{% if not loop.last %}<span class="arrow">&rarr;</span>{% endif %}{% endfor %}
+  </div>
+  {% else %}<p class="muted">None. No rule had all of its conditions met.</p>{% endif %}
+</section>
+
+<!-- 3. DETECTED -->
+<section class="card">
+  <h2>Detected techniques <span class="muted small">ranked by confidence, then severity</span></h2>
+  {% if data.detected %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Technique</th><th>Name</th><th>Tactic</th><th>Severity</th><th>Confidence</th><th>Rule</th><th>Cycle</th></tr></thead>
+    <tbody>
+    {% for d in data.detected %}
+      <tr>
+        <td>{{ loop.index }}</td>
+        <td class="mono">{{ d.technique_id }}</td>
+        <td>{{ d.technique_name }}</td>
+        <td>{{ d.tactic }}</td>
+        <td><span class="badge sev-{{ d.severity }}">{{ d.severity|upper }}</span></td>
+        <td>{{ '%.2f'|format(d.confidence) }}</td>
+        <td class="mono">{{ d.rule_id }}</td>
+        <td>{{ d.cycle }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">No techniques detected.</p>{% endif %}
+</section>
+
+<!-- 4. CHAIN -->
+<section class="card">
+  <h2>Detection chain <span class="muted small">rules in the order they fired</span></h2>
+  {% if data.trace %}
+  <ol class="chain">
+    {% for e in data.trace %}
+    <li>
+      <div class="chain-head"><span class="mono">{{ e.rule_id }}</span> fired in cycle {{ e.cycle }}</div>
+      <div class="chain-body">
+        <div><span class="kw">IF</span>
+          {% for c in e.matched_conditions %}
+            <span class="fact {% if c.source != 'observed' %}derived{% endif %}">{{ c.fact }}{% if c.source != 'observed' %} <em>from {{ c.source }}</em>{% endif %}</span>
+          {% endfor %}
+        </div>
+        <div><span class="kw">THEN</span>
+          {% for c in e.conclusions %}<span class="fact concl">{{ c }}</span>{% endfor %}
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}<p class="muted">No rule fired.</p>{% endif %}
+
+  {% if chart_url %}
+  <figure class="chart"><img src="{{ chart_url }}" alt="Detection chain diagram"></figure>
+  {% elif chart_note %}<p class="muted small">{{ chart_note }}</p>{% endif %}
+</section>
+
+<!-- 5. WHY -->
+<section class="card">
+  <h2>Why <span class="muted small">reasoning behind each detection</span></h2>
+  {% if data.trace %}<pre class="explain">{{ data.explanation }}</pre>
+  {% else %}<p class="muted">Nothing to explain: no technique was concluded.</p>{% endif %}
+</section>
+
+<!-- 6. MITIGATIONS -->
+<section class="card">
+  <h2>Recommended mitigations</h2>
+  {% if data.mitigations %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>ID</th><th>Mitigation</th><th>Addresses</th></tr></thead>
+    <tbody>
+    {% for m in data.mitigations %}
+      <tr>
+        <td class="mono">{{ m.id }}{% if m.team_defined %} *{% endif %}</td>
+        <td>{{ m.name }}</td>
+        <td class="mono">{{ m.techniques|join(', ') }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% if data.mitigations|selectattr('team_defined')|list %}
+  <p class="muted small">* M9001 is team-defined, not an official ATT&amp;CK mitigation. ATT&amp;CK lists no preventive mitigations for Discovery techniques.</p>
+  {% endif %}
+  {% else %}<p class="muted">None, because no technique was detected.</p>{% endif %}
+</section>
+
+<!-- 7. NEAR MISSES -->
+<section class="card">
+  <h2>Near misses / possible techniques <span class="muted small">some conditions matched, rule did not fire</span></h2>
+  {% if data.near_misses %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Technique</th><th>Name</th><th>Severity</th><th>Confidence</th><th>Matched</th><th>Missing to fire</th></tr></thead>
+    <tbody>
+    {% for n in data.near_misses %}
+      <tr>
+        <td class="mono">{{ n.technique_id }}</td>
+        <td>{{ n.technique_name }}</td>
+        <td><span class="badge sev-{{ n.severity }}">{{ n.severity|upper }}</span></td>
+        <td>
+          <div class="meter"><span style="width: {{ (n.confidence * 100)|round|int }}%"></span></div>
+          {{ '%.2f'|format(n.confidence) }}
+        </td>
+        <td>{{ n.matched }}/{{ n.total }}</td>
+        <td>{% for f in n.missing %}<span class="fact missing">{{ f }}</span>{% endfor %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="muted small">Confidence = matched conditions &divide; total conditions (Module 3 heuristic).</p>
+  {% else %}<p class="muted">None.</p>{% endif %}
+</section>
+
+<!-- WHY NOT -->
+<section class="card" id="whynot">
+  <h2>Ask: why was a technique not detected?</h2>
+  <form class="inline" method="post" action="{{ url_for('analyse_page') }}#whynot">
+    <input type="hidden" name="mode" value="rerun">
+    <input type="hidden" name="source" value="{{ data.source }}">
+    <textarea name="facts" hidden>{{ fact_text }}</textarea>
+    <select name="why_not">
+      {% for t in techniques %}
+      <option value="{{ t.id }}" {% if t.id == question %}selected{% endif %}>{{ t.id }} - {{ t.name }} ({{ t.rule }})</option>
+      {% endfor %}
+    </select>
+    <button type="submit">Explain</button>
+  </form>
+  {% if answer %}<pre class="explain">{{ answer }}</pre>{% endif %}
+</section>
+
+<!-- 2. OBSERVED FACTS -->
+<section class="card">
+  <h2>Observed facts <span class="muted small">what went into working memory</span></h2>
+  {% if data.observed %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Fact</th><th>From</th><th>Condition of</th></tr></thead>
+    <tbody>
+    {% for o in data.observed %}
+      <tr>
+        <td>{{ o.n }}</td>
+        <td class="mono">{{ o.fact }}</td>
+        <td>{% if o.lines %}line {{ o.lines|join(', ') }}{% else %}-{% endif %}</td>
+        <td class="mono">{{ o.rules|join(', ') if o.rules else '(no rule)' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="muted">No facts were provided.</p>{% endif %}
+</section>
+
+{% if data.warnings or data.no_fact_lines %}
+<section class="card">
+  <h2>Input notes</h2>
+  <ul class="notes">
+    {% for w in data.warnings %}<li class="warn">{{ w }}</li>{% endfor %}
+    {% if data.no_fact_lines %}<li>{{ data.no_fact_lines|length }} event(s) produced no facts (ordinary activity): line {{ data.no_fact_lines|join(', ') }}</li>{% endif %}
+  </ul>
+</section>
+{% endif %}
+
+<p class="muted small">{{ run_summary }}</p>
+{% endblock %}

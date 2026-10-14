@@ -1,0 +1,11 @@
+# Messy input: bad lines, duplicates and unknown attributes, to show the parser does not crash
+# Expected: T1059.001 (R001), T1566.001 (R018), plus warnings for lines 5, 6, 7 and 11
+process_created:powershell.exe
+process_created:powershell.exe
+powershell.exe -EncodedCommand
+process_created:
+:winword.exe
+command_line_contains:-EncodedCommand   # duplicate below on purpose
+command_line_contains:-EncodedCommand
+parent_process:winword.exe
+user_mood:suspicious

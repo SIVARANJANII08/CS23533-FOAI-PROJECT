@@ -1,226 +1,114 @@
 """
 MITRE ATT&CK Rule-Based Navigator
-Module 4: Agent / Orchestration
+Entry point.
 
-Entry point. Run with:
-    python main.py
+    python main.py                                  interactive menu
+    python main.py --file samples/02_brute_force.log  analyse one file and print the report
+    python main.py --demo                           built-in malicious-document scenario
+    python main.py --list-samples                   list the sample input files
+
+Extra options with --file or --demo:
+    --save reports/out.txt     also write the report to a text file
+    --chart reports/out.png    also draw the detection chain (needs matplotlib)
+
+Agent orchestration (Module 4): Pranathee H
+Input layer, menu and report format: Sivaranjanii M
 """
 
-import sys
+import argparse
 import os
+import sys
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "src"))
+ROOT = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(os.path.join(ROOT, "src"))
 
-from knowledge_base import KnowledgeBase, Fact
-from agent import Agent
+from knowledge_base import KnowledgeBase          # noqa: E402
+from input_parser import (                        # noqa: E402
+    parse_file, parse_fact_lines, list_samples, describe_sample,
+)
+from cli import NavigatorCLI, analyse             # noqa: E402
+import report                                     # noqa: E402
+import visualize                                  # noqa: E402
 
 
-def main():
+# The original hard-coded scenario: a Word document launching encoded
+# PowerShell, plus two of the three brute-force signals (a near miss).
+DEMO_FACTS = [
+    "process_created:powershell.exe",
+    "command_line_contains:-EncodedCommand",
+    "parent_process:winword.exe",
+    "failed_login_count_exceeds:5",
+    "same_source_ip:true",
+]
 
-    print("=" * 60)
-    print("   MITRE ATT&CK Rule-Based Navigator")
-    print("=" * 60)
 
-    # ---------------------------------------------------------
-    # 1. LOAD KNOWLEDGE BASE
-    # ---------------------------------------------------------
-
+def load_kb():
     kb = KnowledgeBase()
+    kb.load_rules(os.path.join(ROOT, "data", "rules.json"))
+    kb.load_mitigations(os.path.join(ROOT, "data", "mitigations.json"))
+    return kb
 
-    kb.load_rules("data/rules.json")
-    kb.load_mitigations("data/mitigations.json")
 
-    print("\n" + kb.summary() + "\n")
+def run_once(kb, parse_result, save_path=None, chart_path=None):
+    """Non-interactive run: analyse, print the report, optionally save."""
 
-    # ---------------------------------------------------------
-    # 2. CREATE OBSERVED BEHAVIOURS
-    # ---------------------------------------------------------
+    _, data = analyse(kb, parse_result)
+    text = report.render(data)
+    print(text)
 
-    observations = [
-        Fact.from_string("process_created:powershell.exe"),
-        Fact.from_string("command_line_contains:-EncodedCommand"),
-        Fact.from_string("parent_process:winword.exe"),
-        Fact.from_string("failed_login_count_exceeds:5"),
-        Fact.from_string("same_source_ip:true"),
-    ]
+    if save_path:
+        report.save(text, save_path)
+        print(f"\nReport saved to {save_path}")
 
-    print("Observed behaviours:")
+    if chart_path:
+        if not visualize.matplotlib_available():
+            print("\nChart skipped: matplotlib is not installed (pip install matplotlib).")
+        else:
+            try:
+                visualize.draw_chain(data, chart_path)
+                print(f"Chart saved to {chart_path}")
+            except ValueError as err:
+                print(f"\nChart skipped: {err}")
 
-    for obs in observations:
-        print(f"  - {obs}")
 
-    # ---------------------------------------------------------
-    # 3. MODULE 4 - AGENT ORCHESTRATION
-    # ---------------------------------------------------------
-
-    agent = Agent(kb)
-
-    engine = agent.process(observations)
-
-    print("\nAgent processed the observations successfully.")
-
-    # ---------------------------------------------------------
-    # 4. CONFIDENCE-RANKED RESULTS
-    # ---------------------------------------------------------
-
-    print("\n--- Confidence-Ranked Rules ---")
-
-    ranked_rules = agent.get_ranked_rules()
-
-    for rule in ranked_rules:
-
-        score = agent.engine.heuristic(rule)
-
-        if score > 0:
-
-            print(
-                f"  {rule.rule_id} | "
-                f"{rule.technique_id} | "
-                f"confidence={score:.2f} | "
-                f"severity={rule.severity}"
-            )
-
-    # ---------------------------------------------------------
-    # 5. DETECTED TECHNIQUES
-    # ---------------------------------------------------------
-
-    print("\n--- Detected Techniques ---")
-
-    detected = agent.get_results()
-
-    if not detected:
-
-        print("  No techniques detected.")
-
-    else:
-
-        for rule in detected:
-
-            print(
-                f"  {rule.technique_id} - "
-                f"{rule.technique_name}"
-            )
-
-    # ---------------------------------------------------------
-    # 6. INFERENCE TRACE
-    # ---------------------------------------------------------
-
-    print("\n--- Inference Trace ---")
-
-    for entry in engine.get_trace():
-
-        print(
-            f"  {entry['order']}. "
-            f"cycle {entry['cycle']}: "
-            f"{entry['rule_id']} fired -> "
-            f"{', '.join(entry['conclusions'])}"
-        )
-
-    # ---------------------------------------------------------
-    # 7. EXPLANATIONS
-    # ---------------------------------------------------------
-
-    print("\n--- WHY: Explanation for Each Detected Technique ---\n")
-
-    print(agent.get_explanation())
-
-    # ---------------------------------------------------------
-    # 8. RECOMMENDED MITIGATIONS
-    # ---------------------------------------------------------
-
-    print("\n--- Recommended Mitigations ---")
-
-    mitigation_found = False
-
-    for rule in detected:
-
-        for mitigation_id in rule.mitigation_ids:
-
-            mitigation = kb.get_mitigation(mitigation_id)
-
-            if mitigation:
-
-                print(
-                    f"  {rule.technique_id}: "
-                    f"{mitigation_id} "
-                    f"{mitigation['name']}"
-                )
-
-                mitigation_found = True
-
-    if not mitigation_found:
-
-        print("  No mitigations available for detected techniques.")
-
-    # ---------------------------------------------------------
-    # 9. NEAR-MISS / POSSIBLE TECHNIQUES
-    # ---------------------------------------------------------
-
-    print("\n--- Near-Miss / Possible Techniques ---")
-
-    near_misses = [
-        rule
-        for rule in ranked_rules
-        if 0.0 < agent.engine.heuristic(rule) < 1.0
-    ]
-
-    if not near_misses:
-
-        print("  No near-miss techniques found.")
-
-    else:
-
-        for rule in near_misses:
-
-            score = agent.engine.heuristic(rule)
-
-            info = engine.partial_matches.get(
-                rule.rule_id,
-                {}
-            )
-
-            matched = info.get(
-                "matched_count",
-                0
-            )
-
-            total = info.get(
-                "total_conditions",
-                len(rule.conditions)
-            )
-
-            print(
-                f"  {rule.technique_id} | "
-                f"confidence={score:.2f} | "
-                f"matched={matched}/{total} | "
-                f"severity={rule.severity}"
-            )
-
-    # ---------------------------------------------------------
-    # 10. TERMINATION
-    # ---------------------------------------------------------
-
-    print("\n--- Inference Status ---")
-
-    print(
-        f"  Terminated: "
-        f"{engine.terminated}"
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="MITRE ATT&CK Rule-Based Navigator (classical rule-based expert system)"
     )
+    parser.add_argument("--file", help="input file to analyse (.log, .facts or .txt)")
+    parser.add_argument("--demo", action="store_true", help="run the built-in demo scenario")
+    parser.add_argument("--list-samples", action="store_true", help="list sample input files")
+    parser.add_argument("--save", metavar="PATH", help="write the report to a text file")
+    parser.add_argument("--chart", metavar="PATH", help="save the detection chain as a PNG")
+    args = parser.parse_args(argv)
 
-    print(
-        f"  Cycles: "
-        f"{engine.cycles}"
-    )
+    kb = load_kb()
 
-    print(
-        f"  Reason: "
-        f"{engine.termination_reason}"
-    )
+    if args.list_samples:
+        for path in list_samples(os.path.join(ROOT, "samples")):
+            print(f"  {os.path.relpath(path, ROOT):<36} {describe_sample(path)}")
+        return 0
 
-    print("\n" + "=" * 60)
-    print("   NAVIGATION COMPLETED")
-    print("=" * 60)
+    if args.file:
+        try:
+            result = parse_file(args.file, kb)
+        except (FileNotFoundError, ValueError) as err:
+            print(f"Error: {err}")
+            return 1
+        run_once(kb, result, args.save, args.chart)
+        return 0
+
+    if args.demo:
+        result = parse_fact_lines(DEMO_FACTS, source="built-in demo", knowledge_base=kb)
+        run_once(kb, result, args.save, args.chart)
+        return 0
+
+    try:
+        NavigatorCLI(kb, ROOT).run()
+    except KeyboardInterrupt:
+        print("\n  Goodbye.")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

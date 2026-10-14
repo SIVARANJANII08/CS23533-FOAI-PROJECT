@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Knowledge base{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Knowledge base</h1>
+  <p class="muted">{{ kb.summary() }} A rule fires only when every condition is in working memory.
+     When it fires it asserts <code>technique_detected</code> and <code>tactic_detected</code>, which later rules can use.</p>
+</section>
+<div class="rules">
+  {% for r in rules %}
+  <article class="card rule">
+    <div class="rule-top">
+      <span class="mono">{{ r.rule_id }}</span>
+      <span class="badge sev-{{ r.severity }}">{{ r.severity|upper }}</span>
+    </div>
+    <h3>{{ r.technique_id }} &middot; {{ r.technique_name }}</h3>
+    <p class="muted small">{{ r.tactic }}</p>
+    <p><span class="kw">IF</span></p>
+    <div>{% for c in r.conditions %}<span class="fact">{{ c }}</span>{% endfor %}</div>
+    <p><span class="kw">THEN</span></p>
+    <div><span class="fact concl">technique_detected:{{ r.technique_id }}</span><span class="fact concl">tactic_detected:{{ r.tactic }}</span></div>
+    <p class="muted small">Mitigations:
+      {% for m in r.mitigation_ids %}{{ m }} {{ kb.get_mitigation(m).name }}{% if not loop.last %}; {% endif %}{% endfor %}
+    </p>
+  </article>
+  {% endfor %}
+</div>
+{% endblock %}

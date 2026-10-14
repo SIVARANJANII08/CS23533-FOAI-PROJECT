@@ -1,0 +1,7 @@
+# Normal office activity: nothing malicious should be concluded
+# Expected: no techniques detected. Only weak near misses (1/3 or 1/2).
+process_created:chrome.exe
+process_created:outlook.exe
+parent_process:explorer.exe
+process_created:cmd.exe
+process_created:tasklist.exe

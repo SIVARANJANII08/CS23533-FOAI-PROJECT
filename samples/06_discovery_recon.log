@@ -1,0 +1,6 @@
+# Discovery: an attacker looks around the network after getting in
+# Expected: T1057 (R016), T1018 (R017), T1083 (R015). Near misses: T1059.003 (R002, 2/3), T1136.001 (R006, 1/3).
+2026-10-14 14:02:10 EventType=ProcessCreate Image=C:\Windows\System32\tasklist.exe ParentImage=C:\Windows\System32\cmd.exe CommandLine="tasklist /svc"
+2026-10-14 14:02:44 EventType=ProcessCreate Image=C:\Windows\System32\net.exe ParentImage=C:\Windows\System32\cmd.exe CommandLine="net view /domain"
+2026-10-14 14:03:05 EventType=NetworkScan SourceIp=10.0.0.31 network_scan_detected=true
+2026-10-14 14:04:30 EventType=ProcessCreate Image=C:\Windows\System32\cmd.exe ParentImage=C:\Windows\explorer.exe CommandLine="cmd.exe /c dir /s C:\Users\*.kdbx" recursive_enumeration=true

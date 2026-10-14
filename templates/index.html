@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <h1>Map observed behaviour to ATT&amp;CK techniques</h1>
+  <p>Give the expert system some evidence. It matches the facts against its production rules,
+     fires every rule whose conditions are all met, chains the conclusions and explains each step.</p>
+  <p class="muted">{{ kb_summary }}</p>
+</section>
+
+{% if error %}<div class="alert">{{ error }}</div>{% endif %}
+
+<div class="grid3">
+  <form class="card" method="post" action="{{ url_for('analyse_page') }}">
+    <input type="hidden" name="mode" value="sample">
+    <h2><span class="step">1</span> Sample scenario</h2>
+    <p class="muted">Eight prepared scenarios, from a phishing document to normal office activity.</p>
+    <div class="sample-list">
+      {% for s in samples %}
+      <label class="sample">
+        <input type="radio" name="sample" value="{{ s.name }}" {% if loop.first %}checked{% endif %}>
+        <span><strong>{{ s.name }}</strong><br><small>{{ s.description }}</small></span>
+      </label>
+      {% endfor %}
+    </div>
+    <button type="submit">Analyse sample</button>
+  </form>
+
+  <form class="card" method="post" action="{{ url_for('analyse_page') }}">
+    <input type="hidden" name="mode" value="manual">
+    <h2><span class="step">2</span> Type facts</h2>
+    <p class="muted">One fact per line, written as <code>attribute:value</code>. Lines starting with # are ignored.</p>
+    <textarea name="facts" rows="12" spellcheck="false" placeholder="process_created:powershell.exe
+command_line_contains:-EncodedCommand
+parent_process:winword.exe">{{ form.get('facts', '') }}</textarea>
+    <button type="submit">Analyse facts</button>
+  </form>
+
+  <form class="card" method="post" action="{{ url_for('analyse_page') }}" enctype="multipart/form-data">
+    <input type="hidden" name="mode" value="upload">
+    <h2><span class="step">3</span> Upload a file</h2>
+    <p class="muted"><code>.facts</code> / <code>.txt</code>: one fact per line.<br>
+       <code>.log</code>: one event per line, timestamp then <code>key=value</code> fields.</p>
+    <input class="file" type="file" name="upload" accept=".log,.facts,.txt">
+    <p class="muted small">Any file in the project's <code>samples</code> folder works here too.</p>
+    <button type="submit">Analyse file</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,12 @@
+# Password brute force: seven failed logins from one IP inside four minutes
+# Expected: T1110.001 (R007). The two failures from 10.0.0.12 stay below the threshold.
+2026-10-14 02:40:11 EventType=LogonFailure User=administrator SourceIp=203.0.113.45 LogonType=10
+2026-10-14 02:40:39 EventType=LogonFailure User=administrator SourceIp=203.0.113.45 LogonType=10
+2026-10-14 02:41:02 EventType=LogonFailure User=administrator SourceIp=203.0.113.45 LogonType=10
+2026-10-14 02:41:30 EventType=LogonFailure User=admin SourceIp=203.0.113.45 LogonType=10
+2026-10-14 02:42:05 EventType=LogonFailure User=admin SourceIp=203.0.113.45 LogonType=10
+2026-10-14 02:42:48 EventType=LogonFailure User=backup SourceIp=203.0.113.45 LogonType=10
+2026-10-14 02:43:59 EventType=LogonFailure User=backup SourceIp=203.0.113.45 LogonType=10
+2026-10-14 08:05:12 EventType=LogonFailure User=priya SourceIp=10.0.0.12 LogonType=2
+2026-10-14 08:05:30 EventType=LogonFailure User=priya SourceIp=10.0.0.12 LogonType=2
+2026-10-14 08:05:44 EventType=LogonSuccess User=priya SourceIp=10.0.0.12 LogonType=2

