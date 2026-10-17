@@ -9,10 +9,10 @@ Supervisor: Dr. S. Bhuvana
 
 ## Team
 
-| Member | Roll No | Owns |
-|---|---|---|
-| Pranathee H | 241901078 | `src/`: match phase, best-first search, agent |
-| Sivaranjanii M | 241901109 | `data/`: knowledge base, rules, mitigations; act phase and explanation trace (Module 2); input layer, CLI menu, report format, sample inputs and documentation (Module 4) |
+| Member | Roll No |
+|---|---|
+| Pranathee H | 241901078 | 
+| Sivaranjanii M | 241901109 | 
 
 Both members work in the same GitHub repository with file-level ownership, so
 modules can be built in parallel against a shared data schema.
